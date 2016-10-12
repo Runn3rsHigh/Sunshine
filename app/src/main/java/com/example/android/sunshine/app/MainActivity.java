@@ -1,13 +1,15 @@
 package com.example.android.sunshine.app;
 
-import android.support.v7.app.ActionBarActivity;
-import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v7.app.ActionBarActivity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 
 import java.util.ArrayList;
 
@@ -52,6 +54,7 @@ public class MainActivity extends ActionBarActivity {
      */
     public static class PlaceholderFragment extends Fragment {
 
+        private ArrayAdapter<String> mAdapter;
         public PlaceholderFragment() {
         }
 
@@ -64,6 +67,12 @@ public class MainActivity extends ActionBarActivity {
             fakeData.add("Today-Sunny-78/60");
             fakeData.add("Monday-Overcast-74/55");
             fakeData.add("Tuesday-Cloudy-76/63");
+
+            mAdapter = new ArrayAdapter<String>(getActivity(),R.layout.list_item_forecast,R.id.list_item_forecast_textview,fakeData);
+
+            ListView mListView = (ListView)rootView.findViewById(R.id.listview_forecast);
+            mListView.setAdapter(mAdapter);
+
             return rootView;
         }
     }
