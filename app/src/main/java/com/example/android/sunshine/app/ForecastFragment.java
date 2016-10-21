@@ -5,10 +5,14 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -22,10 +26,16 @@ import java.util.ArrayList;
  * Created by kschm on 10/13/2016.
  */
 
-public static class ForecastFragment extends Fragment {
+public class ForecastFragment extends Fragment {
 
     private ArrayAdapter<String> mAdapter;
     public ForecastFragment() {
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
     }
 
     @Override
@@ -44,9 +54,34 @@ public static class ForecastFragment extends Fragment {
         mListView.setAdapter(mAdapter);
 
 
-        public class FetchWeatherTask extends AsyncTask {
+        return rootView;
+    }
 
-            
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        super.onCreateOptionsMenu(menu, inflater);
+        inflater.inflate(R.menu.forecastfragment,menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item){
+        switch (item.getItemId()){
+            case R.id.action_refresh:
+                Toast.makeText(getActivity(),"Pressed Refresh",Toast.LENGTH_SHORT).show();
+                FetchWeatherTask weatherTask = new FetchWeatherTask();
+                weatherTask.execute();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    public class FetchWeatherTask extends AsyncTask<Void, Void, String> {
+
+        private final String LOG_TAG = FetchWeatherTask.class.getSimpleName();
+
+        @Override
+        protected String doInBackground(Void... voids) {
             // These two need to be declared outside the try/catch
             // so that they can be closed in the finally block.
             HttpURLConnection urlConnection = null;
@@ -89,7 +124,7 @@ public static class ForecastFragment extends Fragment {
                 }
                 forecastJsonStr = buffer.toString();
             } catch (IOException e) {
-                Log.e("PlaceholderFragment", "Error ", e);
+                Log.e("ForecastFragment", "Error ", e);
                 // If the code didn't successfully get the weather data, there's no point in attempting
                 // to parse it.
                 forecastJsonStr = null;
@@ -101,14 +136,18 @@ public static class ForecastFragment extends Fragment {
                     try {
                         reader.close();
                     } catch (final IOException e) {
-                        Log.e("PlaceholderFragment", "Error closing stream", e);
+                        Log.e("ForecastFragment", "Error closing stream", e);
                     }
                 }
             }
+            return forecastJsonStr;
+        }
+
+        @Override
+        protected void onPostExecute(String result){
+            super.onPostExecute(result);
         }
 
 
-
-        return rootView;
     }
 }
