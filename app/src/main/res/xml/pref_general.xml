@@ -9,5 +9,12 @@
         android:defaultValue="94043"
         android:inputType="text"
         android:singleLine="true" />
+    <ListPreference
+        android:key="temperature_units"
+        android:title="@string/pref_temperature_units"
+        android:dialogTitle="@string/pref_temperature_units"
+        android:entries="@array/temp_units" />
+
+
 
 </PreferenceScreen>

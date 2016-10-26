@@ -1,9 +1,11 @@
 package com.example.android.sunshine.app;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.text.format.Time;
 import android.util.Log;
@@ -16,7 +18,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import android.widget.Toast;
+import android.widget.TextView;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -56,15 +58,21 @@ public class ForecastFragment extends Fragment {
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
-        ArrayList<String> fakeData = new ArrayList<String>();
-        fakeData.add("Today-Sunny-78/60");
-        fakeData.add("Monday-Overcast-74/55");
-        fakeData.add("Tuesday-Cloudy-76/63");
+        // TextView to show current zip code
+        TextView currentLocation = (TextView) rootView.findViewById(R.id.currentLocation);
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getActivity().getApplicationContext());
+        Log.v(LOG_TAG,getString(R.string.pref_location_default));
+        String location = sharedPref.getString("location",getString(R.string.pref_location_default));
+        currentLocation.setText("Current Zip Code: " + location);
 
-        mAdapter = new ArrayAdapter<String>(getActivity(),R.layout.list_item_forecast,R.id.list_item_forecast_textview,fakeData);
+        // Update the weather to get fresh data
+        updateWeather();
 
+        // Setup list view and adapter to show weather data
         ListView mListView = (ListView)rootView.findViewById(R.id.listview_forecast);
         mListView.setAdapter(mAdapter);
+
+        // Setup DetailActivity for the items in mListView
         mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
@@ -85,13 +93,30 @@ public class ForecastFragment extends Fragment {
         inflater.inflate(R.menu.forecastfragment,menu);
     }
 
+    private void updateWeather(){
+        FetchWeatherTask weatherTask = new FetchWeatherTask();
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getActivity().getApplicationContext());
+        String location = sharedPref.getString("location",getString(R.string.pref_location_default));
+        weatherTask.execute(location);
+
+        TextView myView = (TextView)getActivity().findViewById(R.id.currentLocation);
+        Log.v(LOG_TAG,getString(R.string.pref_location_default));
+        myView.setText("Current Zip Code: " + location);
+
+    }
+
+    @Override
+    public void onStart(){
+        super.onStart();
+        updateWeather();
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item){
         switch (item.getItemId()){
             case R.id.action_refresh:
-                Toast.makeText(getActivity(),"Pressed Refresh",Toast.LENGTH_SHORT).show();
-                FetchWeatherTask weatherTask = new FetchWeatherTask();
-                weatherTask.execute("94043");
+                //Update zip code in main view
+                updateWeather();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -277,7 +302,9 @@ public class ForecastFragment extends Fragment {
                 String[] weatherDataFromJson = getWeatherDataFromJson(result,7);
                 //Log.v(LOG_TAG,weatherDataFromJson.toString());
                 ArrayList<String> weatherData = new ArrayList<String>(Arrays.asList(weatherDataFromJson));
-                mAdapter.clear();
+                if(mAdapter != null){
+                    mAdapter.clear();
+                }
                 mAdapter.addAll(weatherData);
                 mAdapter.notifyDataSetChanged();
             } catch (JSONException e) {
