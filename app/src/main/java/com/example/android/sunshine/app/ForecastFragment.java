@@ -33,6 +33,7 @@ import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Locale;
 
 /**
  * Created by kschm on 10/13/2016.
@@ -57,14 +58,7 @@ public class ForecastFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-
-        // TextView to show current zip code
-        TextView currentLocation = (TextView) rootView.findViewById(R.id.currentLocation);
-        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getActivity().getApplicationContext());
-        Log.v(LOG_TAG,getString(R.string.pref_location_default));
-        String location = sharedPref.getString("location",getString(R.string.pref_location_default));
-        currentLocation.setText("Current Zip Code: " + location);
-
+        mAdapter = new ArrayAdapter<String>(getActivity().getApplicationContext(),R.layout.list_item_forecast,R.id.list_item_forecast_textview);
         // Update the weather to get fresh data
         updateWeather();
 
@@ -98,11 +92,23 @@ public class ForecastFragment extends Fragment {
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getActivity().getApplicationContext());
         String location = sharedPref.getString("location",getString(R.string.pref_location_default));
         weatherTask.execute(location);
+    }
+    private void updateZipView(){
+        TextView myView = (TextView) getActivity().findViewById(R.id.currentLocation);
 
-        TextView myView = (TextView)getActivity().findViewById(R.id.currentLocation);
-        Log.v(LOG_TAG,getString(R.string.pref_location_default));
-        myView.setText("Current Zip Code: " + location);
+        // Current zip
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getActivity().getApplicationContext());
+        String location = sharedPref.getString("location",getString(R.string.pref_location_default));
 
+        StringBuilder sb = new StringBuilder();
+        java.util.Formatter formatter = new java.util.Formatter(sb, Locale.US);
+
+        myView.setText(formatter.format("%s %s",getString(R.string.zip_display),location).toString());
+
+    }
+    private long convertToImperial(double input){
+        long fahrenheit = (long)((input * 1.8) + 32);
+        return fahrenheit;
     }
 
     @Override
@@ -133,10 +139,18 @@ public class ForecastFragment extends Fragment {
             return shortenedDateFormat.format(time);
         }
 
-        private String formatHighLows(double high, double low){
+        private String formatHighLows(double high, double low, String unitType){
+
             // For presentation, assume user doesn't care about tenths of a degree
-            long roundedHigh = Math.round(high);
-            long roundedLow = Math.round(low);
+            long roundedHigh;
+            long roundedLow;
+
+            if (unitType.equals(getString(R.string.constant_temp_imperial))){
+                high = convertToImperial(high);
+                low = convertToImperial(low);
+            }
+            roundedHigh = Math.round(high);
+            roundedLow = Math.round(low);
 
             String highLowStr = roundedHigh + "/" + roundedLow;
             return highLowStr;
@@ -198,7 +212,10 @@ public class ForecastFragment extends Fragment {
                 double high = temperatureObject.getDouble(OWM_MAX);
                 double low = temperatureObject.getDouble(OWM_MIN);
 
-                highAndLow = formatHighLows(high, low);
+                SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getActivity());
+                String unitType = sharedPref.getString(getString(R.string.pref_units_key),getString(R.string.constant_temp_metric));
+
+                highAndLow = formatHighLows(high, low, unitType);
                 resultStrs[i] = day + " - " + description + " - " + highAndLow;
             }
             /*
@@ -307,6 +324,9 @@ public class ForecastFragment extends Fragment {
                 }
                 mAdapter.addAll(weatherData);
                 mAdapter.notifyDataSetChanged();
+
+                // Updates the TextView on the Main Fragment to show the current zip code
+                updateZipView();
             } catch (JSONException e) {
                 e.printStackTrace();
             }
