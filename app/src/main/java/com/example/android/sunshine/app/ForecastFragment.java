@@ -117,12 +117,31 @@ public class ForecastFragment extends Fragment {
         updateWeather();
     }
 
+    public void showMap(){
+
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getActivity().getApplicationContext());
+        String loc = sharedPref.getString("location",getString(R.string.pref_location_default));
+        //"geo:0,0?q="+loc
+        Uri mapAction = Uri.parse("geo:0,0?").buildUpon()
+                .appendQueryParameter("q",loc)
+                .build();
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setData(mapAction);
+
+        if (intent.resolveActivity(getActivity().getPackageManager()) != null){
+            startActivity(intent);
+        }
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item){
         switch (item.getItemId()){
             case R.id.action_refresh:
                 //Update zip code in main view
                 updateWeather();
+                return true;
+            case R.id.action_view_on_maps:
+                showMap();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
